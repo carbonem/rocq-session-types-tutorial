@@ -1,7 +1,7 @@
 (* Imported libraries *) 
 From mathcomp Require Import all_ssreflect.
 From Coq Require Import FunctionalExtensionality.
-Require Import Stdlib.Program.Equality.
+(* Require Import Stdlib.Program.Equality. *)
 Require Import free_names types semantics syntax fintype core linearity_predicate env.
 
 
@@ -28,14 +28,48 @@ Proof.
   destruct j.
   destruct f => //.
   destruct x; destruct f => //.
-  asimpl.
+  simpl.
   move => H; subst. 
   by move:H1; case.  
 Qed. 
   
-
+Notation "x '!->' v ';' m" := (update m x v)
+                              (at level 100, v at next level, right associativity).
 (* Typing rules *)
-Inductive OFT {n : nat} (Delta : env n) : proc n -> Prop := 
+Reserved Notation "Delta ⊢ P"  (at level 40).
+
+(* StartTY *)
+Inductive OFT {n : nat} (Delta : env n) : proc n -> Prop :=  
+    TEndP : Delta ⊢ ∅
+  | TParP : forall P1 P2 : proc n,
+            Delta ⊢ P1 -> Delta ⊢ P2 -> Delta ⊢ (P1 ∥ P2)
+  | TResP : forall (T : sType) (P : proc n.+2),
+            (free_in (n.+2__ch var_zero) P ->
+             lin (n.+2__ch var_zero) P) ->
+            (free_in (n.+2__ch var_one) P ->
+             lin (n.+2__ch var_one) P) ->
+            (T ::: (dual T ::: Delta)) ⊢ P ->
+            Delta ⊢ ((ν) P)
+  | TWaitP : forall (x : ch n) (P : proc n),
+             Delta x = end? ->
+             Delta ⊢ P -> Delta ⊢ (x ? ․ P)
+  | TCloseP : forall (x : ch n) (P : proc n),
+              Delta x = end! ->
+              Delta ⊢ P -> Delta ⊢ (x ! ․ P)
+  | TInSP : forall (x : ch n) (T' T : sType) (P : proc n.+1),
+            Delta x = ? T ․ T' ->
+            lin (n.+1__ch var_zero) P ->
+            (T ::: (x !-> T'; Delta)) ⊢ P ->
+            Delta ⊢ (x ? (_)․P)
+  | TDelP : forall (x y : ch n) (T' T : sType) (P : proc n),
+            Delta x = ! T ․ T' ->
+            Delta y = T ->
+            (x !-> T'; Delta) ⊢ P ->
+            Delta ⊢ (x ! y ․ P)
+            where  "Delta ⊢ P" := (OFT Delta P).
+            
+(* EndTY *)
+(*
 | TEndP : OFT Delta EndP
 
 | TParP P1 P2: 
@@ -85,7 +119,7 @@ Inductive OFT {n : nat} (Delta : env n) : proc n -> Prop :=
 
 Notation "Γ ⊢ P" := (OFT Γ P) (at level 40).
 
-
+*)
 
 Lemma substitution {n m : nat} : forall (Delta: env n) (Gamma: env m) sigma P,
     injectiveS P sigma -> 
@@ -125,7 +159,7 @@ Proof.
       apply/Hyp.
       apply/injectiveNS_up_ch_ch_zero2.
       apply/injectiveNS_up_ch_ch_zero2.
-      by asimpl.
+      by simpl.
     * move => Hyp.
       apply/lin_subst. 
       apply/H2. 
@@ -133,7 +167,7 @@ Proof.
       apply/Hyp.
       apply/injectiveNS_up_ch_ch_one.
       apply/injectiveNS_up_ch_ch_one.
-      by asimpl.
+      by simpl.
     * apply (IH _ (shift_env T (shift_env (dual T) Delta))
                (shift_env T (shift_env (dual T) Gamma))) => //.
       apply/injectiveS_ResP => //.
@@ -162,7 +196,7 @@ Proof.
     apply/lin_subst.
     apply/H3. 
     apply/injectiveNS_up_ch_ch_zero1. 
-    by asimpl.
+    by simpl.
     apply/(IH _ (shift_env T (update Delta (var_ch i) T'))) => //.
     apply/(injectiveS_InSP (var_ch i)) => //.
     apply (ltc_InSP _ _ (var_ch i)). 
@@ -375,7 +409,7 @@ Proof.
           (shift_env (dual T) (shift_env (dual (dual T)) Delta)) =
             (swap_env (shift_env T (shift_env (dual T) Delta)) 
                (var_ch var_zero) (var_ch var_one)).
-        { rewrite dual_dual_is_identinty.
+        { rewrite dual_dual_is_identity.
           apply functional_extensionality => x.
           rewrite/swap_env/shift_env.
           case: ifP.
@@ -415,7 +449,7 @@ Proof.
           rewrite/swap_env/shift_env. 
           case: ifP.
           move/eqP => ->. 
-          by rewrite dual_dual_is_identinty.
+          by rewrite dual_dual_is_identity.
           move/eqP => Hyp.
           case: ifP.
           by move/eqP => ->.
@@ -599,6 +633,16 @@ Proof.
           destruct f => //.
     }
 
+  (* SC_Res_Zero *)
+  - split.
+    move => H.
+    constructor.
+    move => H.
+    apply (TResP _ end?).
+    case. 
+    case. 
+    constructor.
+    
   (* SC_Refl *) 
   - move => n0 P0 Q0 Hstruct IH Delta.
     by apply iff_sym.
@@ -756,7 +800,7 @@ Proof.
         apply (free_in_subst _ (scons (var_ch i_sent) ids)) => //=.
         apply/injectiveNS_scons_shift.
         move: H2. 
-        asimpl.
+        simpl.
         by apply/contra_not => ->.
       * (* LDelPObj *)
         apply/LParPR => //. 
@@ -776,12 +820,12 @@ Proof.
       apply/contra_not. 
       by right; right. 
       apply/lin_subst. 
-      apply/H5. 
+      apply/H1. 
       apply/injectiveNS_scons_shift.
       move:H3 => /=.
       apply/contra_not => ->.
       by right; left. 
-      by asimpl.
+      by simpl.
 Qed.
 
 
@@ -844,7 +888,9 @@ Theorem subject_reduction : forall n P Q Delta,
     (forall x, free_in x P -> lin x P) -> 
     @reduce n P Q -> OFT Delta P -> OFT Delta Q. 
 Proof.
-  move => n P Q Delta Hlin H; elim: H Hlin Delta => /=.
+  move => n P Q Delta Hlin H; elim: H Hlin Delta.
+
+  (* R_Res *) 
   - move => n0 P0 Q0 Hred IH Hlin Delta H.
     inversion H; subst. 
     apply/(TResP _ T). 
@@ -866,6 +912,7 @@ Proof.
     inversion H'; subst. 
     apply/H5.
     
+  (* R_Par *) 
   - move => n0 P0 Q0 R Hred IH Hlin Delta H. 
     inversion H; subst. 
     apply/TParP => //. 
@@ -881,6 +928,7 @@ Proof.
     apply Hyp in Hyp'.
     inversion Hyp';subst => //.
 
+  (* R_Struct *)
   - move => n0 P0 P' Q0 Q' Heq1 Hred IH Heq2 Hlin Delta H. 
     apply/(subject_congruence _ Q') => //. 
     apply/IH.
@@ -890,6 +938,7 @@ Proof.
     apply/(free_in_congruence _ _ P') => //.
     apply/(subject_congruence _ P0) => //. 
 
+  (* R_Close *) 
   - move => n0 P0 Q0 _ Delta H.
     inversion H; subst. 
     have fact1: lin (var_ch var_zero) (var_ch var_one ! ․ P0 ∥ var_ch var_zero ? ․ Q0) 
@@ -906,8 +955,8 @@ Proof.
     inversion H6; subst. 
     apply/TParP => //. 
 
-
-    (* R_Del case *)
+    
+  (* R_Del *)
   - move => n0 x P0 Q0 Hlin Delta H.
     (* 
       H = Delta ⊢ (ν) (var_one!x․P0 ∥ var_zero?(_)․Q0)
@@ -1042,7 +1091,7 @@ Proof.
         destruct f => //.
         destruct f => //.
         move: (Hlin (var_ch f)).
-        asimpl.
+        simpl.
         have fact1 : forall (X Y Z : Prop), (X \/ Y -> Z) -> X -> Z
             by move => X Y Z Hyp1 Hyp2; apply: Hyp1; left.
         have fact2 : forall (X Y Z : Prop), (X \/ Y -> Z) -> Y -> Z
@@ -1066,6 +1115,16 @@ Proof.
         apply/contra_not => H11.
         by right; left.
 Qed. 
-
-
-
+(*
+From Hammer Require Import Tactics.
+Lemma weakening' {n : nat}: forall x T Delta (P : proc n),
+    not (free_in x P) -> OFT Delta P ->	OFT (update Delta x T) P. 
+Proof. 
+intros.
+generalize dependent x.
+generalize dependent T.
+induction H0; intros.
+- sfirstorder .
+- hecrush use: update_others.
+Admitted.
+*)

@@ -9,6 +9,9 @@ Definition env (n:nat) := ch n -> sType.
 Definition update {n : nat} (e : env n) (x : ch n) (T : sType) : 
   env n := fun y => if (x==y) then T else e y.
 
+Notation "x '!->' v ';' m" := (update m x v)
+                              (at level 100, v at next level, right associativity).
+
 Lemma update_others {n : nat}: forall c x T (Delta : env n),
     c <> x -> update Delta x T c = Delta c. 
 Proof. 
@@ -38,6 +41,9 @@ Definition shift_env {n : nat} (T : sType) (e : env n) : env n.+1 :=
            | var_ch None => T
            | var_ch (Some i) => e (var_ch i)
            end.
+Check scons.
+Notation "T ::: Delta" := (shift_env T Delta) (at level 40).
+
 
 Lemma update_var_zero {n : nat}: forall T1 T2 Delta,
     (update (shift_env T1 Delta) (n.+2__ch var_zero) T2) 

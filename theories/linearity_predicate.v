@@ -3,26 +3,50 @@ From mathcomp Require Import all_ssreflect.
 Require Import core fintype free_names syntax semantics. 
 
 (* Linear Predicate *)
-Inductive lin {n : nat} : (ch n) -> proc n -> Prop :=
-| LWaitP x P          : not (free_in x P) ->
-                        lin x (WaitP x P)
-| LWaitPcongr x y P   : lin y P ->
-                        not(x = y) -> 
-                        lin y (WaitP x P)
-| LCloseP x P         : not (free_in x P) ->
-                        lin x (CloseP x P)
-| LClosePcongr x y P  : lin y P -> 
-                        not (x = y) -> 
-                        lin y (CloseP x P)
-| LResP  x P          : lin (subst_ch (fun i => var_ch (shift (shift i))) x)
+Inductive lin {n : nat} : ch n -> proc n -> Prop :=
+    LWaitP : forall (x : ch n) (P : proc n),
+             ~ free_in x P -> lin x (x ? ․ P)
+  | LWaitPcongr : forall (x y : ch n) (P : proc n),
+                  lin y P -> x <> y -> lin y (x ? ․ P)
+  | LCloseP : forall (x : ch n) (P : proc n),
+              ~ free_in x P -> lin x (x ! ․ P)
+  | LClosePcongr : forall (x y : ch n) (P : proc n),
+                   lin y P -> x <> y -> lin y (x ! ․ P)
+  | LResP : forall (x : ch n) (P : proc n.+2),
+  lin (subst_ch (fun i => var_ch (shift (shift i))) x) P ->
+            lin x ((ν) P)
+  | LParPL : forall (x : ch n) (P1 P2 : proc n),
+             lin x P1 ->
+             ~ free_in x P2 -> lin x (P1 ∥ P2)
+  | LParPR : forall (x : ch n) (P1 P2 : proc n),
+             ~ free_in x P1 ->
+             lin x P2 -> lin x (P1 ∥ P2)
+  | LInSP : forall (x y : ch n) (P : proc n.+1),
+            lin (subst_ch (fun i => var_ch (shift i)) y) P ->
+             lin y (x ? (_)․P)
+  | LDelP : forall (x y z : ch n) (P : proc n),
+            z <> y -> lin z P -> lin z (x ! y ․ P)
+  | LDelPObj : forall (x y : ch n) (P : proc n),
+               x <> y ->
+               ~ free_in y P -> lin y (x ! y ․ P).
+               (*
+    LWaitP : forall (x : ch n) (P : proc n),
+             ~ free_in x P -> lin x (x ? ․ P)
+  | LWaitPcongr : forall (x y : ch n) (P : proc n),
+                  lin y P -> x <> y -> lin y (x ? ․ P)
+  | LCloseP : forall (x : ch n) (P : proc n),
+              ~ free_in x P -> lin x (x ! ․ P)
+  | LClosePcongr : forall (x y : ch n) (P : proc n),
+                   lin y P -> x <> y -> lin y (x ! ․ P)
+  | LResP  x P          : lin (subst_ch (fun i => var_ch (shift (shift i))) x)
                           P ->
                         lin x (ResP P)
-| LParPL x P1 P2      : lin x P1 -> 
-                        not (free_in x P2) ->
-                        lin x (ParP P1 P2)
-| LParPR x P1 P2      : not (free_in x P1) ->
-                        lin x P2 ->
-                        lin x (ParP P1 P2)
+ | LParPL : forall (x : ch n) (P1 P2 : proc n),
+             lin x P1 ->
+             ~ free_in x P2 -> lin x (P1 ∥ P2)
+  | LParPR : forall (x : ch n) (P1 P2 : proc n),
+             ~ free_in x P1 ->
+             lin x P2 -> lin x (P1 ∥ P2)
 | LInSP x y P         : lin (var_ch var_zero) P -> 
                         lin (subst_ch (fun i => var_ch (shift i)) y) P ->
                         lin y (InSP x P)
@@ -32,6 +56,8 @@ Inductive lin {n : nat} : (ch n) -> proc n -> Prop :=
 | LDelPObj x y P      : not (x=y) -> 
                         not (free_in y P) ->
                         lin y (DelP x y P).
+*)
+
 
 
 Lemma lin_subst {n : nat} {m : nat} : 
@@ -114,8 +140,6 @@ Proof.
   - move => n0 c P IH m i j sigma H1 H2 H3. 
     inversion H1; subst. 
     apply/LInSP.
-    apply/(IH _ var_zero) => //.
-    apply/injectiveNS_up_ch_ch_zero1.
     apply/(IH _ (shift i)) => //.
     by apply/(injectiveNS_up_ch_ch_InSP _ c). 
     asimpl; rewrite/funcomp. 
@@ -246,10 +270,6 @@ Proof.
   - move => n0 [k] P IH m i j sigma /= H1 HInj H2. 
     inversion H1; subst. 
     apply/LInSP => /=.
-    apply/IH.
-    apply/H4.
-    apply/injectiveNS_up_ch_ch_zero1.
-    by asimpl.
     apply/(IH _ _ (shift j) (up_ch_ch sigma)) => //=.
     by apply/(injectiveNS_up_ch_ch_InSP _ (var_ch k)).
     rewrite/funcomp/shift => /=.
@@ -414,6 +434,12 @@ Proof.
       apply/injectiveNS_swap.
       by asimpl.
     }
+  - split.
+    move => H.
+    inversion H; subst.
+    inversion H2.
+    move => H.
+    inversion H.     
   - move => n0 P0 Q0 H1 H2 i. 
     by apply iff_sym.
   - move => n0 P0 Q0 R Heq H1 Heq2 H2 i.
@@ -504,11 +530,9 @@ Proof.
       inversion Hyp; subst. 
       apply/LInSP => //. 
       by rewrite -H.
-      by rewrite -H.
     * move => Hyp.
       inversion Hyp; subst. 
       apply/LInSP => //. 
-      by rewrite H.
       by rewrite H.
 Qed.
 

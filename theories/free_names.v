@@ -3,6 +3,7 @@ From mathcomp Require Import all_ssreflect.
 Require Import core fintype syntax semantics. 
 Open Scope subst_scope.
 
+(** Note: remaining asimpl are needed*)
 Fixpoint free_in {n : nat} (z : ch n) (P : proc n ) := 
   match P with
   | EndP       => False
@@ -13,8 +14,8 @@ Fixpoint free_in {n : nat} (z : ch n) (P : proc n ) :=
   | InSP x P   => (x = z) \/ 
                     (free_in (subst_ch (fun i => var_ch (shift i)) z)P)
   | DelP x y P => (x = z) \/ (y = z) \/ free_in z P
-end. 
-
+end.
+(*
 Fixpoint notfree_in {n : nat} (z : ch n) (P : proc n) :=
   match P with
   | EndP       => True
@@ -32,7 +33,7 @@ Lemma free_not_free_in {n : nat} (z : ch n) (P : proc n) :
 Proof.
   induction P; firstorder.
   Qed.  
-
+*)
 
 (* InjectiveS -- injective on a given set (as free names) *) 
 
@@ -61,10 +62,10 @@ Proof.
   asimpl.
   by case => ->.
   move:Hyp.
-  asimpl.
+  simpl.
   rewrite/funcomp.
   destruct (sigma f) => //.
-  asimpl.
+  simpl.
   rewrite/scons/funcomp. 
   destruct f0 => //.
   destruct (sigma f) => //.
@@ -86,7 +87,7 @@ Proof.
   rewrite/injectiveS => H i j H1 H2.
   destruct i.
   destruct j.
-  asimpl => Hyp.
+  simpl => Hyp.
   f_equal; f_equal.
   apply/H => //=.
   by right.
@@ -96,7 +97,7 @@ Proof.
   destruct (sigma f) => //.
   destruct (sigma f0) => //=.
   by case => ->. 
-  asimpl.
+  simpl.
   rewrite/funcomp.
   destruct (sigma f) => //.
   asimpl.
@@ -249,7 +250,7 @@ Proof.
   move:H1 => /= => H1. 
   by right. 
   move:H2. 
-  asimpl.
+  simpl.
   rewrite/funcomp/shift/subst_ch => /=.
   destruct (sigma i) => H2 => //.
   destruct (sigma f) => //.
@@ -257,7 +258,7 @@ Proof.
   move:H2.
   by case.
   move:H2.
-  asimpl.
+  simpl.
   rewrite/funcomp/shift/subst_ch => /=.
   by destruct (sigma i).
 Qed. 
@@ -353,11 +354,11 @@ Lemma injectiveNS_scons_shift {n : nat} : forall i j P,
 Proof.
   move => i j P H. 
   rewrite/injectiveNS => x _.
-  case: x => H'; asimpl.
+  case: x => H'; simpl.
   by case => <-.
   move: H.
   move: H'. 
-  asimpl.
+  simpl.
   case => <-. 
   by case. 
 Qed.
@@ -403,7 +404,7 @@ Proof.
     by case => ->.
   - move => n0 P IH1 Q IH2 m sigma j => /=.
     case. 
-    * move/IH1. 
+    *  move/IH1. 
       case => x0 [H1 H2].
       exists x0.
       split => //.
@@ -426,7 +427,7 @@ Proof.
       split.
       by right. 
       move: H2.
-      asimpl.
+      simpl.
       rewrite/funcomp/shift => /=.
       destruct (sigma f).
       by case => ->.
@@ -467,11 +468,11 @@ Qed.
 Lemma free_in_subst_inv {n : nat} {m : nat} : 
   forall (i : fin n) (sigma : fin n -> ch m) (P : proc n),
     free_in (var_ch i) P
-    -> free_in (subst_ch sigma (var_ch i)) (subst_proc sigma P).
+    -> free_in (subst_ch sigma (var_ch i))  ((< sigma >) P).
 Proof. 
   move => i sigma P; elim: P m i sigma => //=.
   - move => n0 [j] P IH m i sigma.
-    asimpl.
+    simpl.
     case. 
     * case => ->. 
       by left. 
@@ -518,19 +519,19 @@ Proof.
 Qed.  
 
 Lemma free_in_congruence {n : nat} : forall (x : ch n) (P Q : proc n),
-    struct_eq P Q -> free_in x Q <-> free_in x P.
+      P ≅ Q  -> free_in x Q <-> free_in x P.
 Proof.
   move => x P Q Hred; elim: Hred x => //=.
-  - by move => n0 P0 Q0 x; rewrite or_comm. 
-  - by move => n0 P0 Q0 R x; rewrite or_assoc. 
-  - split. 
+  - firstorder. (* by move => n0 P0 Q0 x; rewrite or_comm.*) 
+  - firstorder. (* by move => n0 P0 Q0 R x; rewrite or_assoc. *) 
+  - firstorder. (* split. 
     by move => H; left. 
-    case => //.
+    case => //. *)
   - move => n0 P0 Q0 [i].
     split. 
-    + case. 
-      * by move => H; left. 
-      * move => H; right. 
+    + case; try firstorder. 
+       
+      * right. 
         apply (free_in_subst i (fun i : fin n0 => var_ch (shift (shift i)))) => //.
         apply/injectiveNS_shift_shift.
     + case. 
@@ -541,7 +542,7 @@ Proof.
     + move => H. 
       apply/(free_in_subst _ (swap_ch var_zero var_one)).
       have fact : subst_ch (swap_ch var_zero var_one) (var_ch (shift (shift i))) =
-                    (var_ch (shift (shift i))) by asimpl.
+                    (var_ch (shift (shift i))) by simpl.
       by rewrite fact. 
       apply/injectiveNS_swap.
     + move/free_in_subst_inv.
@@ -555,40 +556,38 @@ Proof.
       apply/injectiveNS_swap.
     + move/(free_in_subst_inv _ (swap_ch var_zero var_two)).
       by move/(free_in_subst_inv _ (swap_ch var_one var_three)).
-  - by move => n0 P0 Q0 Heq H x; apply iff_sym.
-  - by move => n0 P0 Q0 R Heq1 H Heq2 H' x; rewrite -H.
-  - by move => n0 P0 P' Q0 Q' Heq1 H1 Heq2 H2 x; rewrite -H1 -H2.
-  - by move => n0 P0 P' x Heq H x0; rewrite -H.
-  - by move => n0 P0 P' x Heq H x0; rewrite -H.
-  - by move => n0 P0 P' x y Heq H x0; rewrite -H.
-  - by move => n0 P0 P' x Heq H x0; rewrite -H.
-Qed. 
+  - firstorder. 
+  - firstorder. 
+  - firstorder. 
+  - firstorder. 
+  - firstorder. 
+  - firstorder. 
+  - firstorder. 
+   Qed. 
 
 
 Lemma free_in_reduction {n : nat} : forall (x : ch n) (P Q : proc n),
-    reduce P Q -> free_in x Q -> free_in x P.
+    P ⇛ Q  -> free_in x Q -> free_in x P.
 Proof.
   move => [i] P Q Hred; elim: Hred i.
-  - by move => n0 P0 Q0 Hred IH i =>/= => H; apply/IH.
-  - move => n0 P0 Q0 R Hred IH i =>/= => Hyp.
-    inversion Hyp.
-    left.
-    by apply/IH.
-    by right. 
+  - firstorder. (*by move => n0 P0 Q0 Hred IH i =>/= => H; apply/IH. *)
+  - intros. firstorder. (*move => n0 P0 Q0 R Hred IH i =>/= => Hyp.*)
+
   - move => n0 P0 P' Q0 Q' Hstruct1 Hred1 IH Hstruct2 i H. 
     apply/(free_in_congruence _ _ P') => //. 
     apply/IH.
     apply/(free_in_congruence _ _ Q0) => //. 
   - move => n0 P0 Q0 i /=.
-    case. 
+    case; tauto. (* 
     by move => H; left; right. 
-    by move => H; right; right. 
+    by move => H; right; right. *) 
   - move => n0 [j] P0 Q0 i /=.
+    (* checking for i free, communicating j  *) 
     case. 
-    * by move => H; left; right; right.
+    * tauto. (*by move => H; left; right; right.*)
     * move => H. 
       case: (fin_eq_dec (shift (shift i)) j). 
-      + by move => ->; left; right; left.
+      + by move => ->; intuition. 
       + move => H1; right; right.
         apply/free_in_subst.
         apply/H.
@@ -617,95 +616,3 @@ Proof.
   case => x0 [H1 H2].
   inversion H2.
 Qed.
-
-(* <<<<<<< HEAD *)
-(* ======= *)
-(* Lemma free_ch_subst_exists {n : nat} {m : nat} :  *)
-(*   forall x (sigma : fin n -> ch m) (P : proc n), *)
-(*     free_in x (subst_proc sigma P) ->  *)
-(*     exists i, free_in (var_ch i) P /\ sigma i = x. *)
-(* Admitted. *)
-(* >>>>>>> 83ad6a04e18af8256cf62c271bdbaf409fdd0f6b *)
-(* Lemma free_ch_0_shift {n : nat} : forall (P : proc n),  *)
-(*     ~free_in (var_ch var_zero) (shift_two_up P).  *)
-(* Proof. *)
-(*   move => P. *)
-(* <<<<<<< HEAD *)
-(*   rewrite/not/shift_two_up.  *)
-(*   move/(free_in_subst_aux). *)
-(*   case => x0 [H1 H2]. *)
-(*   inversion H2.  *)
-(* Qed.    *)
-
-(* ======= *)
-(*   rewrite/not/shift_up.  *)
-(*   Admitted. *)
-(*   (* *)
-(*   move/(free_in_subst).  *)
-(*   asimpl. *)
-(*   rewrite/funcomp/shift. => H. *)
-
-
-(*   move/free_ch_subst_domain_codomain. *)
-(*   case => x.  *)
-(*   case => _ /=. *)
-(*   move => H. *)
-(*   inversion H.  *)
-(* Qed.    *)
-(* *) *)
-(* Lemma free_in_subst' {n : nat} {m : nat} :  *)
-(*   forall (i : fin n) (sigma : fin n -> ch m) (P : proc n), *)
-(*     free_in (subst_ch sigma (var_ch i)) (subst_proc sigma P)  *)
-(*     -> injectiveNS i P sigma  *)
-(*     -> free_in (var_ch i) P. *)
-(* Admitted. *)
-(* >>>>>>> 83ad6a04e18af8256cf62c271bdbaf409fdd0f6b *)
-
-(* Lemma free_ch_1_shift {n : nat} : forall (P : proc n),  *)
-(*     ~free_in (var_ch var_one) (shift_two_up P).  *)
-(* Proof. *)
-(*   move => P. *)
-(*   rewrite/not/shift_two_up.  *)
-(*   move/(free_in_subst_aux). *)
-(*   case => x0 [H1 H2]. *)
-(*   inversion H2.  *)
-(* Qed.    *)
-
-(* Lemma injectiveNS_swap_zero_one {n : nat} : forall (i : fin n) (P : proc n.+2), *)
-(*     injectiveNS (shift (shift i)) P (swap_ch var_zero var_one). *)
-(* Proof.  *)
-(*   move => i P; rewrite/injectiveNS => j H1 H2.  *)
-(*   destruct j. *)
-(*   destruct f.  *)
-(*   inversion H2 => //. *)
-(*   inversion H2. *)
-(*   inversion H2.  *)
-(* Qed.  *)
-
-(* Lemma injectiveNS_swap_one_three {n : nat} : forall (i : fin n) (P : proc n.+4), *)
-(*     injectiveNS (shift (shift (shift (shift i)))) *)
-(*       P (swap_ch var_one var_three). *)
-(* Proof.  *)
-(*   move => i P; rewrite/injectiveNS => j H1 H2.  *)
-(*   destruct j. *)
-(*   repeat destruct f.  *)
-(*   inversion H2 => //. *)
-(*   inversion H2. *)
-(*   inversion H2.  *)
-(*   inversion H2. *)
-(*   inversion H2.  *)
-(* Qed.  *)
-
-(* Lemma injectiveNS_swap_zero_two {n : nat} : forall (i : fin n) (P : proc n.+4), *)
-(*     injectiveNS (shift (shift (shift (shift i)))) *)
-(*       P (swap_ch var_zero var_two). *)
-(* Proof.  *)
-(*   move => i P; rewrite/injectiveNS => j H1 H2.  *)
-(*   destruct j. *)
-(*   repeat destruct f.  *)
-(*   inversion H2 => //. *)
-(*   inversion H2. *)
-(*   inversion H2.  *)
-(*   inversion H2. *)
-(*   inversion H2.  *)
-(* Qed.  *)
