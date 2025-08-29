@@ -7,7 +7,7 @@ From HB Require Import structures.
 (*
 Open Scope subst_scope.
 *)
-  #[global]
+#[global]
   Open Scope subst_scope.
 Definition var_one {n : nat} : fin (S (S n)) := shift var_zero.
 Definition var_two {n : nat} : fin (S (S (S n))) := shift var_one.
@@ -149,60 +149,6 @@ Inductive struct_eq {n:nat} : proc n -> proc n -> Prop :=
                    ≅ x ? (_)․P'
                    where   "P '≅' Q" := (struct_eq P Q).
                    
-
-(*
-  fun i => match i with
-  | None => var_ch var_zero           (* 0 maps to 0 in scope n *)
-  | Some None => var_ch var_zero      (* 1 also maps to 0 (they're connected) *)
-  | Some (Some j) => var_ch (Some j)  (* channels 2+ shift down by 1 *)
-  end.                   
-Definition close_subst {n : nat} : fin n.+2 -> ch n :=
-  fun i => match i with
-  | None => var_ch None           (* 0 maps to 0 in the lower scope *)
-  | Some None => var_ch None      (* 1 also maps to 0 (they're connected) *)
-  | Some (Some j) => var_ch (j)  (* other channels shift down by 2 *)
-  end.
-Definition close_subst {n : nat} : fin n.+2 -> ch n :=
-  fun i => match i with
-  | None => var_ch n None           (* 0 maps to 0 in the lower scope *)
-  | Some None => var_ch n None      (* 1 also maps to 0 (they're connected) *)
-  | Some (Some j) => var_ch n (Some j)  (* other channels shift down by 2 *)
-  end.
-
-| SC_Par_Com P Q     : struct_eq (ParP P Q) (ParP Q P) 
-
-| SC_Par_Assoc P Q R : struct_eq (ParP (ParP P Q) R) 
-                         (ParP P (ParP Q R))
-
-| SC_Par_Inact P     : struct_eq (ParP P EndP) P
-
-| SC_Res_Scope (P : proc n.+2) (Q : proc n) : 
-  struct_eq (ParP (ResP P) Q) (ResP (ParP  P (shift_two_up Q)))
-
-| SC_Res_SwapC P : struct_eq (ResP P) 
-                     (ResP (subst_proc (swap_ch var_zero var_one) P))
-
-| SC_Res_SwapB P : struct_eq (ResP (ResP P))
-                     (ResP (ResP (subst_proc (swap_ch var_one var_three)
-                                    (subst_proc (swap_ch var_zero var_two) 
-                                       P)))) 
-
-(* equivalence rules *) 
-| SC_Refl P          : struct_eq P P
-| SC_Sym P Q         : struct_eq P Q -> struct_eq Q P
-| SC_Trans P Q R     : struct_eq P Q -> struct_eq Q R -> struct_eq P R
-
- (* congruence rules*)
-| SC_Cong_Par P P' Q Q'  : struct_eq P P' -> struct_eq Q Q' -> struct_eq (ParP P Q) (ParP P' Q')
-| SC_Cong_Res P P'       : struct_eq P P' -> struct_eq (ResP P) (ResP P')
-| SC_Cong_Close P P' x   : struct_eq P P' -> struct_eq (CloseP x P) (CloseP x P')
-| SC_Cong_Wait P P' x    : struct_eq P P' -> struct_eq (WaitP x P) (WaitP x P')
-| SC_Cong_OutS P P' x  y : struct_eq P P' -> struct_eq (DelP x y P) (DelP x y P')
-| SC_Cong_InsP P P' x    : struct_eq P P' -> struct_eq (InSP x  P) (InSP x  P')
-.
-*)
-
-
 Reserved Notation " P '⇛' Q " (at level 50, left associativity).  
       (* StartRed *)
 Inductive reduce {n:nat} : proc n -> proc n -> Prop :=
@@ -218,25 +164,3 @@ Inductive reduce {n:nat} : proc n -> proc n -> Prop :=
             (ν) (1 ! x ․ P ∥ 0 ? (_)․Q) ⇛ (ν) (P ∥ (< x.. >) Q) (* EndRed *)
             
 where " P '⇛' Q " := (reduce P Q) . Check ids.
-(*
-| R_Res P Q          : reduce P Q ->
-                       reduce (ResP P) (ResP Q)
-
-| R_Par P Q R        : reduce P Q ->
-                       reduce (ParP P R) (ParP Q R)
-
-| R_Struct P P' Q Q' : struct_eq P P' ->
-                       reduce P' Q' ->
-                       struct_eq Q' Q ->
-                       reduce P Q 
-
-| R_Close P Q:        
-  reduce (ResP (ParP (CloseP (var_ch var_one) P) 
-                  (WaitP (var_ch var_zero)   Q) ))
-    (ResP (ParP P Q))
-
-| R_Del x P Q:        
-  reduce (ResP (ParP (DelP (var_ch var_one) x P) 
-                  (InSP (var_ch var_zero)   Q) ))
-    (ResP (ParP P (subst_proc (scons x ids) Q) )) *)
-    

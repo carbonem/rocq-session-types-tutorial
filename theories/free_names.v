@@ -15,25 +15,6 @@ Fixpoint free_in {n : nat} (z : ch n) (P : proc n ) :=
                     (free_in (subst_ch (fun i => var_ch (shift i)) z)P)
   | DelP x y P => (x = z) \/ (y = z) \/ free_in z P
 end.
-(*
-Fixpoint notfree_in {n : nat} (z : ch n) (P : proc n) :=
-  match P with
-  | EndP       => True
-  | WaitP x P  => (x <> z) /\ (notfree_in z P)
-  | CloseP x P => (x <> z) /\ (notfree_in z P)
-  | ResP P     => notfree_in (subst_ch (fun i => var_ch (shift (shift i))) z) P
-  | ParP P Q   => (notfree_in z P) /\ (notfree_in z Q)
-  | InSP x P   => (x <> z) /\ 
-                    (notfree_in (subst_ch (fun i => var_ch (shift i)) z) P)
-  | DelP x y P => (x <> z) /\ (y <> z) /\ notfree_in z P
-  end.
-
-Lemma free_not_free_in {n : nat} (z : ch n) (P : proc n) : 
-  ~ free_in z P <-> notfree_in z P.
-Proof.
-  induction P; firstorder.
-  Qed.  
-*)
 
 (* InjectiveS -- injective on a given set (as free names) *) 
 
@@ -522,11 +503,9 @@ Lemma free_in_congruence {n : nat} : forall (x : ch n) (P Q : proc n),
       P ≅ Q  -> free_in x Q <-> free_in x P.
 Proof.
   move => x P Q Hred; elim: Hred x => //=.
-  - firstorder. (* by move => n0 P0 Q0 x; rewrite or_comm.*) 
-  - firstorder. (* by move => n0 P0 Q0 R x; rewrite or_assoc. *) 
-  - firstorder. (* split. 
-    by move => H; left. 
-    case => //. *)
+  - firstorder. 
+  - firstorder. 
+  - firstorder. 
   - move => n0 P0 Q0 [i].
     split. 
     + case; try firstorder. 
@@ -570,21 +549,19 @@ Lemma free_in_reduction {n : nat} : forall (x : ch n) (P Q : proc n),
     P ⇛ Q  -> free_in x Q -> free_in x P.
 Proof.
   move => [i] P Q Hred; elim: Hred i.
-  - firstorder. (*by move => n0 P0 Q0 Hred IH i =>/= => H; apply/IH. *)
-  - intros. firstorder. (*move => n0 P0 Q0 R Hred IH i =>/= => Hyp.*)
-
+  - firstorder.
+  - intros.
+    firstorder. 
   - move => n0 P0 P' Q0 Q' Hstruct1 Hred1 IH Hstruct2 i H. 
     apply/(free_in_congruence _ _ P') => //. 
     apply/IH.
     apply/(free_in_congruence _ _ Q0) => //. 
   - move => n0 P0 Q0 i /=.
-    case; tauto. (* 
-    by move => H; left; right. 
-    by move => H; right; right. *) 
+    case; tauto. 
   - move => n0 [j] P0 Q0 i /=.
     (* checking for i free, communicating j  *) 
     case. 
-    * tauto. (*by move => H; left; right; right.*)
+    * tauto.
     * move => H. 
       case: (fin_eq_dec (shift (shift i)) j). 
       + by move => ->; intuition. 
