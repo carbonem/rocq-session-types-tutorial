@@ -29,35 +29,6 @@ Inductive lin {n : nat} : ch n -> proc n -> Prop :=
   | LDelPObj : forall (x y : ch n) (P : proc n),
                x <> y ->
                ~ free_in y P -> lin y (x ! y ․ P).
-               (*
-    LWaitP : forall (x : ch n) (P : proc n),
-             ~ free_in x P -> lin x (x ? ․ P)
-  | LWaitPcongr : forall (x y : ch n) (P : proc n),
-                  lin y P -> x <> y -> lin y (x ? ․ P)
-  | LCloseP : forall (x : ch n) (P : proc n),
-              ~ free_in x P -> lin x (x ! ․ P)
-  | LClosePcongr : forall (x y : ch n) (P : proc n),
-                   lin y P -> x <> y -> lin y (x ! ․ P)
-  | LResP  x P          : lin (subst_ch (fun i => var_ch (shift (shift i))) x)
-                          P ->
-                        lin x (ResP P)
- | LParPL : forall (x : ch n) (P1 P2 : proc n),
-             lin x P1 ->
-             ~ free_in x P2 -> lin x (P1 ∥ P2)
-  | LParPR : forall (x : ch n) (P1 P2 : proc n),
-             ~ free_in x P1 ->
-             lin x P2 -> lin x (P1 ∥ P2)
-| LInSP x y P         : lin (var_ch var_zero) P -> 
-                        lin (subst_ch (fun i => var_ch (shift i)) y) P ->
-                        lin y (InSP x P)
-| LDelP x y z P       : not (z=y) ->
-                        lin z P -> 
-                        lin z (DelP x y P)
-| LDelPObj x y P      : not (x=y) -> 
-                        not (free_in y P) ->
-                        lin y (DelP x y P).
-*)
-
 
 
 Lemma lin_subst {n : nat} {m : nat} : 
