@@ -68,58 +68,6 @@ Inductive OFT {n : nat} (Delta : env n) : proc n -> Prop :=
             Delta ⊢ (x ! y ․ P)
             where  "Delta ⊢ P" := (OFT Delta P).
             
-(* EndTY *)
-(*
-| TEndP : OFT Delta EndP
-
-| TParP P1 P2: 
-  (* ˆˆˆˆˆˆˆˆ^ *)
-  OFT Delta P1 ->
-  OFT Delta P2 ->
-  (* ------------------- *)
-  OFT Delta (ParP P1 P2)
-
-| TResP T P:
-  (* ˆˆˆˆˆˆˆˆ^ *)
-  (free_in (var_ch var_zero) P -> lin (var_ch var_zero) P) ->
-  (free_in (var_ch var_one) P -> lin (var_ch var_one) P) -> 
-  OFT (shift_env T (shift_env (dual T) Delta)) P -> 
-  (* ------------------- *)
-  OFT Delta (ResP P)
-
-| TWaitP x P: 
-  (* ˆˆˆˆˆˆˆˆ^ *)
-  Delta x = WaitT -> 
-  OFT Delta P -> 
-  (* ------------------------- *)
-  OFT Delta (WaitP x P)
-
-| TCloseP  x P: 
-  (* ˆˆˆˆˆˆˆˆ^ *)
-  Delta x = CloseT -> 
-  OFT Delta P -> 
-  (* -------------------------- *)
-  OFT Delta (CloseP x P)
-
-| TInSP  x T' T P:
-  (* ˆˆˆˆˆˆˆˆ^ *)
-  Delta x = (InST T T') ->  
-  lin (var_ch var_zero) P -> 
-  OFT (shift_env T (update Delta x T')) P -> 
-  (* ------------------------------------*)
-  OFT Delta (InSP x P)
-
-| TDelP x y T' T P: 
-  (* ˆˆˆˆˆˆˆˆ^ *)
-  Delta x = (OutST T T') ->  
-  Delta y = T ->  
-  OFT (update Delta x T') P -> 
-  (* ---------------------------------------*)
-  OFT Delta (DelP x y P).
-
-Notation "Γ ⊢ P" := (OFT Γ P) (at level 40).
-
-*)
 
 Lemma substitution {n m : nat} : forall (Delta: env n) (Gamma: env m) sigma P,
     injectiveS P sigma -> 
@@ -1115,16 +1063,3 @@ Proof.
         apply/contra_not => H11.
         by right; left.
 Qed. 
-(*
-From Hammer Require Import Tactics.
-Lemma weakening' {n : nat}: forall x T Delta (P : proc n),
-    not (free_in x P) -> OFT Delta P ->	OFT (update Delta x T) P. 
-Proof. 
-intros.
-generalize dependent x.
-generalize dependent T.
-induction H0; intros.
-- sfirstorder .
-- hecrush use: update_others.
-Admitted.
-*)
