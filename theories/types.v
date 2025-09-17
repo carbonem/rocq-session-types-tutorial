@@ -1,6 +1,6 @@
 (* Imported libraries *) 
 From mathcomp Require Import all_ssreflect.
-Require Import syntax core fintype.
+Require Import synsem.
 
 
 (* Syntax of and operations on session types *) 
